@@ -66,7 +66,7 @@ library(tidymodels)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 set.seed(123)
 
-nba2021pergame <- read.csv("https://www.kaggle.com/umutalpaydn/nba-20202021-season-player-stats/version/1?select=nba2021_per_game.csv")
+nba2021pergame <- read.csv("nba2021_per_game.csv")
 
 ```
 
