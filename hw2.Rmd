@@ -66,7 +66,7 @@ library(tidymodels)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 set.seed(123)
 
-nba2021pergame <- read_csv("nba2021_per_game.csv")
+nba2021pergame <- read.csv("https://www.kaggle.com/umutalpaydn/nba-20202021-season-player-stats/version/1?select=nba2021_per_game.csv")
 
 ```
 
@@ -86,6 +86,11 @@ lm_spec <-
     linear_reg() %>% 
     set_engine(engine = 'lm') %>% 
     set_mode('regression')
+lm_lasso_spec_tune <- 
+  linear_reg() %>%
+  set_args(mixture = 1, penalty = tune()) %>% ## mixture = 1 indicates Lasso
+  set_engine(engine = 'glmnet') %>% #note we are using a different engine
+  set_mode('regression') 
 ```
 
 ```{r}
