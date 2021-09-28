@@ -72,10 +72,7 @@ nba2021pergame <- read_csv("nba2021_per_game.csv")
 
 ```{r}
 # data cleaning
-lm_spec <- 
-    linear_reg() %>% 
-    set_engine(engine = 'lm') %>% 
-    set_mode('regression')
+
 ```
 
 ```{r}
@@ -85,7 +82,10 @@ lm_spec <-
 
 ```{r}
 # model spec
-
+lm_spec <- 
+    linear_reg() %>% 
+    set_engine(engine = 'lm') %>% 
+    set_mode('regression')
 ```
 
 ```{r}
