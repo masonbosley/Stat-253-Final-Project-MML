@@ -67,19 +67,20 @@ tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 set.seed(123)
 
 nba2021pergame <- read.csv("2021-PerGame-Player-Stats.csv")
-
+head(nba2021pergame)
 ```
 
 ```{r}
 # data cleaning
 nba_clean <-
-  nba2021pergame %>% distinct(Player, .keep_all = TRUE)
+  nba2021pergame %>% distinct(Player, .keep_all = TRUE) %>%
+  select(-ï..Rk)
 
 ```
 
 ```{r}
 # creation of cv folds
-
+nba_cv10 <- vfold_cv(nba_clean, v = 10)
 ```
 
 ```{r}
@@ -93,24 +94,53 @@ lm_lasso_spec_tune <-
   set_args(mixture = 1, penalty = tune()) %>% ## mixture = 1 indicates Lasso
   set_engine(engine = 'glmnet') %>% #note we are using a different engine
   set_mode('regression') 
+knn_spec <- 
+  nearest_neighbor() %>% # new type of model!
+  set_args(neighbors = tune()) %>% # tuning parameter is neighbor; tuning spec
+  set_engine(engine = 'kknn') %>% # new engine
+  set_mode('regression')
 ```
 
 ```{r}
 # recipes & workflows
-
+full_rec <- recipe(AllNBA ~ ., data = nba_clean) %>%
+  step_nzv(all_predictors()) %>% # removes variables with the same value
+  step_normalize(all_numeric_predictors())
+lasso_wf_tune <- workflow() %>% 
+  add_recipe(full_rec) %>% # recipe defined above
+  add_model(lm_lasso_spec_tune) 
+knn_rec <- recipe( AllNBA ~ . , data = nba_clean) %>%
+    step_nzv(all_predictors()) %>% 
+    step_novel(all_nominal_predictors()) %>% 
+    step_normalize(all_numeric_predictors()) %>%  
+    step_dummy(all_nominal_predictors())
+knn_wf <- workflow() %>%
+  add_model(knn_spec) %>% 
+  add_recipe(knn_rec)
 ```
 
 ```{r}
 # fit & tune models
-#meow
+penalty_grid <- grid_regular(
+  penalty(range = c(-5, 1)), #log10 transformed 
+  levels = 50)
 
+nbatune_output <- tune_grid( # new function for tuning parameters
+  lasso_wf_tune, # workflow
+  resamples = nba_cv10, # cv folds
+  metrics = metric_set(rmse, mae, rsq),
+  grid = penalty_grid # penalty grid defined above
+)
+nbatune_output
+autoplot(nbatune_output)
 ```
 
 c.
 
 ```{r}
 #  calculate/collect CV metrics
-
+best_penalty <- select_best(nbatune_output, metric = 'mae')
+best_penalty
 ```
 
  
