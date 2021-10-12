@@ -79,7 +79,7 @@ nba_clean <-
 
 ```{r}
 # creation of cv folds
-
+nba_clean_cv <- vfold_cv(nba_clean, v = 10)
 ```
 
 ```{r}
