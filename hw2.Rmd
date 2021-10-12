@@ -72,6 +72,8 @@ nba2021pergame <- read.csv("2021-PerGame-Player-Stats.csv")
 
 ```{r}
 # data cleaning
+nba_clean <-
+  nba2021pergame %>% distinct(Player, .keep_all = TRUE)
 
 ```
 
