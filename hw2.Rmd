@@ -80,7 +80,11 @@ nba_clean <-
 
 ```{r}
 # creation of cv folds
+<<<<<<< HEAD
 nba_cv10 <- vfold_cv(nba_clean, v = 10)
+=======
+nba_clean_cv <- vfold_cv(nba_clean, v = 10)
+>>>>>>> fe46717ca5c4bb0c02d0cfb3ed5481ca0f20c700
 ```
 
 ```{r}
