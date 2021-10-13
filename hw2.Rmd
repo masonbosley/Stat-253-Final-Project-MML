@@ -68,6 +68,8 @@ set.seed(123)
 
 nba2021pergame <- read.csv("2021-PerGame-Player-Stats.csv")
 head(nba2021pergame)
+
+nba2021_2022salaries <- read.csv("2021-2022-Player-Salaries.csv")
 ```
 
 ```{r}
