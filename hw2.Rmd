@@ -168,7 +168,9 @@ e.
 
 3. **Societal impact**
     - Are there any harms that may come from your analyses and/or how the data were collected?
+    -> There seems to be no harm in the way that this data was collected, as there is no experiment involved: basketball stats are gathered via game observation alone. Given that we are using our model to make predictions that may not necessarily come true, there is potential for our analyses to cause confusion or facilitate the spread of misinformation.
     - What cautions do you want to keep in mind when communicating your work?
+    -> As mentioned above, it will be important to communicate that our findings are predictions based on previous data, and by no means should they be taken as fact. There are a variety of factors, such as injuries and off-court issues, that cannot be predicted but can have substantial impact on player performance.
 
 
 
