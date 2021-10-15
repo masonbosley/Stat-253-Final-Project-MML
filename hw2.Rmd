@@ -67,9 +67,14 @@ tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 set.seed(123)
 
 nba2021pergame <- read.csv("2021-PerGame-Player-Stats.csv")
-head(nba2021pergame)
+
 
 nba2021_2022salaries <- read.csv("2021-2022-Player-Salaries.csv")
+ 
+
+nba2021pergame <- nba2021pergame %>% left_join(nba2021_2022salaries,by=c('Player')) %>% select(-Tm.y,-ï..Rk.y) %>%
+  filter(!is.na(Salary))
+head(nba2021pergame)
 ```
 
 ```{r}
