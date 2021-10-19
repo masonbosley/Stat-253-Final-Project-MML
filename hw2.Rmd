@@ -131,7 +131,7 @@ knn_wf <- workflow() %>%
 ```{r}
 # fit & tune models
 penalty_grid <- grid_regular(
-  penalty(range = c(-5, 3)), #log10 transformed 
+  penalty(range = c(3, 7)), #log10 transformed 
   levels = 50)
 
 nbatune_output <- tune_grid( # new function for tuning parameters
@@ -148,7 +148,7 @@ c.
 
 ```{r}
 #  calculate/collect CV metrics
-best_penalty <- select_best(nbatune_output, metric = 'mae')
+best_penalty <- select_best(nbatune_output, metric = 'rsq')
 best_penalty
 ```
 
