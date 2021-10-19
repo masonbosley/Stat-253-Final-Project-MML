@@ -70,17 +70,18 @@ nba2021pergame <- read.csv("2021-PerGame-Player-Stats.csv")
 
 
 nba2021_2022salaries <- read.csv("2021-2022-Player-Salaries.csv")
- 
+names(nba2021_2022salaries)[1] <- "Player"
 
-nba2021pergame <- nba2021pergame %>% left_join(nba2021_2022salaries,by=c('Player')) %>% select(-Tm.y,-ï..Rk.y) %>%
+nba2021pergame <- nba2021pergame %>% left_join(nba2021_2022salaries,by=c('Player')) %>%
+  select(-ï..Rk)  %>%
+  distinct(Player, .keep_all = TRUE) %>%
   filter(!is.na(Salary))
 head(nba2021pergame)
 ```
 
 ```{r}
 # data cleaning
-nba_clean <-
-  nba2021pergame %>% distinct(Player, .keep_all = TRUE)
+
 
 ```
 
