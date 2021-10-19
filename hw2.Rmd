@@ -135,11 +135,10 @@ penalty_grid <- grid_regular(
 nbatune_output <- tune_grid( # new function for tuning parameters
   lasso_wf_tune, # workflow
   resamples = nba_cv10, # cv folds
-  metrics = metric_set(rmse, mae, rsq),
+  metrics = metric_set(mae),
   grid = penalty_grid # penalty grid defined above
 )
 nbatune_output
-autoplot(nbatune_output)
 ```
 
 c.
