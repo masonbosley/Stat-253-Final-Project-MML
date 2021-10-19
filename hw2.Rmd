@@ -111,13 +111,14 @@ knn_spec <-
 
 ```{r}
 # recipes & workflows
-full_rec <- recipe(AllNBA ~ ., data = nba_clean) %>%
+full_rec <- recipe(Salary ~ G+ GS +FG + MP + PTS +STL+Age+TRB+AST+WS, data = nba_clean) %>%
   step_nzv(all_predictors()) %>% # removes variables with the same value
-  step_normalize(all_numeric_predictors())
+  step_normalize(all_numeric_predictors()) %>% 
+  step_dummy(all_nominal_predictors())
 lasso_wf_tune <- workflow() %>% 
   add_recipe(full_rec) %>% # recipe defined above
   add_model(lm_lasso_spec_tune) 
-knn_rec <- recipe( AllNBA ~ . , data = nba_clean) %>%
+knn_rec <- recipe(Salary ~ . , data = nba_clean) %>%
     step_nzv(all_predictors()) %>% 
     step_novel(all_nominal_predictors()) %>% 
     step_normalize(all_numeric_predictors()) %>%  
@@ -130,16 +131,17 @@ knn_wf <- workflow() %>%
 ```{r}
 # fit & tune models
 penalty_grid <- grid_regular(
-  penalty(range = c(-5, 1)), #log10 transformed 
+  penalty(range = c(-5, 3)), #log10 transformed 
   levels = 50)
 
 nbatune_output <- tune_grid( # new function for tuning parameters
   lasso_wf_tune, # workflow
   resamples = nba_cv10, # cv folds
-  metrics = metric_set(mae),
+  metrics = metric_set(rsq),
   grid = penalty_grid # penalty grid defined above
 )
 nbatune_output
+autoplot(nbatune_output)
 ```
 
 c.
