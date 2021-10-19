@@ -80,8 +80,7 @@ head(nba2021pergame)
 ```{r}
 # data cleaning
 nba_clean <-
-  nba2021pergame %>% distinct(Player, .keep_all = TRUE) %>%
-  select(-ï..Rk)
+  nba2021pergame %>% distinct(Player, .keep_all = TRUE)
 
 ```
 
