@@ -131,13 +131,13 @@ knn_wf <- workflow() %>%
 ```{r}
 # fit & tune models
 penalty_grid <- grid_regular(
-  penalty(range = c(-5, 2)), #log10 transformed 
+  penalty(range = c(2, 7)), #log10 transformed 
   levels = 50)
 
 nbatune_output <- tune_grid( # new function for tuning parameters
   lasso_wf_tune, # workflow
   resamples = nba_cv10, # cv folds
-  metrics = metric_set(rsq),
+  metrics = metric_set(mae),
   grid = penalty_grid # penalty grid defined above
 )
 nbatune_output
@@ -148,7 +148,7 @@ c.
 
 ```{r}
 #  calculate/collect CV metrics
-best_penalty <- select_best(nbatune_output, metric = 'rsq')
+best_penalty <- select_best(nbatune_output, metric = 'mae')
 best_penalty
 ```
 
