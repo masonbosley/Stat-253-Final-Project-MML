@@ -73,9 +73,10 @@ nba2021_2022salaries <- read.csv("2021-2022-Player-Salaries.csv")
 names(nba2021_2022salaries)[1] <- "Player"
 
 nba2021pergame <- nba2021pergame %>% left_join(nba2021_2022salaries,by=c('Player')) %>%
-  select(-ï..Rk)  %>%
+  select(-AllStar)  %>%
   distinct(Player, .keep_all = TRUE) %>%
-  filter(!is.na(Salary))
+  filter(!is.na(Salary)) %>%
+  na.omit()
 head(nba2021pergame)
 ```
 
@@ -89,6 +90,7 @@ head(nba2021pergame)
 # creation of cv folds
 
 nba_cv10 <- vfold_cv(nba2021pergame, v = 10)
+
 ```
 
 ```{r}
@@ -112,10 +114,11 @@ knn_spec <-
 ```{r}
 # recipes & workflows
 mod1 <- fit(lm_spec, 
-    Salary ~ G+ GS +FG +FGA + MP + PTS +STL + BLK + Age + ORB + DRB + AST + WS + X3P. + X2P., data = nba2021pergame)
+    Salary ~ G+GS +FG +FGA + MP + PTS +STL + BLK + Age + ORB + DRB + AST + WS + X3P. + X2P., data = nba2021pergame)
 
 
 full_rec <- recipe(Salary ~ G+ GS +FG +FGA + MP + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + TRB + AST + WS + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021pergame) %>%
+  step_mutate(Salary = log(Salary)) %>%
   step_nzv(all_predictors()) %>% # removes variables with the same value
   step_normalize(all_numeric_predictors()) %>% 
   step_dummy(all_nominal_predictors())
@@ -135,8 +138,8 @@ knn_wf <- workflow() %>%
 ```{r}
 # fit & tune models
 penalty_grid <- grid_regular(
-  penalty(range = c(2, 7)), #log10 transformed 
-  levels = 50)
+  penalty(range = c(-2, 1)), #log10 transformed 
+  levels = 10)
 
 nbatune_output <- tune_grid( # new function for tuning parameters
   lasso_wf_tune, # workflow
@@ -168,7 +171,7 @@ d.
 mod1_output <- mod1 %>% 
     predict(new_data = nba2021pergame) %>%
     bind_cols(nba2021pergame) %>%
-    mutate(resid = Salary - .pred)
+    mutate(resid = log(Salary) - .pred)
 ggplot(mod1_output, aes(x = .pred, y = resid)) +
     geom_point() +
     geom_smooth() +
