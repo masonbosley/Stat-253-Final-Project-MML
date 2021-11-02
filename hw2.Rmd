@@ -118,7 +118,6 @@ mod1 <- fit(lm_spec,
 
 
 full_rec <- recipe(Salary ~ G+ GS +FG +FGA + MP + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + TRB + AST + WS + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021pergame) %>%
-  step_mutate(Salary = log(Salary)) %>%
   step_nzv(all_predictors()) %>% # removes variables with the same value
   step_normalize(all_numeric_predictors()) %>% 
   step_dummy(all_nominal_predictors())
@@ -171,7 +170,7 @@ d.
 mod1_output <- mod1 %>% 
     predict(new_data = nba2021pergame) %>%
     bind_cols(nba2021pergame) %>%
-    mutate(resid = log(Salary) - .pred)
+    mutate(resid = Salary - .pred)
 ggplot(mod1_output, aes(x = .pred, y = resid)) +
     geom_point() +
     geom_smooth() +
