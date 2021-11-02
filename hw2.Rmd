@@ -137,7 +137,7 @@ knn_wf <- workflow() %>%
 ```{r}
 # fit & tune models
 penalty_grid <- grid_regular(
-  penalty(range = c(-2, 1)), #log10 transformed 
+  penalty(range = c(3, 7)), #log10 transformed 
   levels = 10)
 
 nbatune_output <- tune_grid( # new function for tuning parameters
