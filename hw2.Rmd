@@ -241,6 +241,49 @@ pos_final_fit %>% extract_fit_engine() %>% rpart.plot()
 tree_mod_highcp %>% extract_fit_engine() %>% rpart.plot()
 ```
 
+```{r}
+#LASSO Logistic
+
+# Make sure you set reference level (to the outcome you are NOT interested in)
+nba2021pergame <- nba2021pergame %>%
+  mutate(nba2021pergame = relevel(factor(AllNBA), ref='Not_AllNBA')) #set reference level
+
+nba_cv10 <- vfold_cv(nba2021pergame, v = 10)
+
+
+# Logistic LASSO Regression Model Spec
+logistic_lasso_spec_tune <- logistic_reg() %>%
+    set_engine('glmnet') %>%
+    set_args(mixture = 1, penalty = tune()) %>%
+    set_mode('classification')
+
+# Recipe
+logistic_rec <- recipe(AllNBA ~ G+GS +FG +FGA + MP + PTS +STL + BLK + Age + ORB + DRB + AST + WS + X3P. + X2P., data = nba2021pergame) %>%
+    step_normalize(all_numeric_predictors()) %>% 
+    step_dummy(all_nominal_predictors())
+
+# Workflow (Recipe + Model)
+log_lasso_wf <- workflow() %>% 
+    add_recipe(logistic_rec) %>%
+    add_model(logistic_lasso_spec_tune) 
+
+# Tune Model (trying a variety of values of Lambda penalty)
+penalty_grid <- grid_regular(
+  penalty(range = c(2, 7)), #log10 transformed  (kept moving min down from 0)
+  levels = 20)
+
+tune_output <- tune_grid( 
+  log_lasso_wf, # workflow
+  resamples = nba_cv10, # cv folds
+  metrics = metric_set(roc_auc,accuracy),
+  control = control_resamples(save_pred = TRUE, event_level = 'second'),
+  grid = penalty_grid # penalty grid defined above
+)
+
+# Visualize Model Evaluation Metrics from Tuning
+autoplot(tune_output) + theme_classic()
+```
+
 
 e.
 
