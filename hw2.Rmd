@@ -62,6 +62,7 @@ library(dplyr)
 library(readr)
 library(broom)
 library(ggplot2)
+library(rpart.plot)
 library(tidymodels) 
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 set.seed(123)
@@ -230,7 +231,7 @@ tree_mod_lowcp <- fit(
 )
 tree_mod_highcp <- fit(
     data_wf_tune %>%
-        update_model(tree_spec %>% set_args(cost_complexity = .05)),
+        update_model(tree_spec %>% set_args(cost_complexity = .03)),
     data = nba2021pergame
 )
 
