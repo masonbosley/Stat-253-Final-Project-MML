@@ -312,6 +312,27 @@ tune_output <- tune_grid(
 autoplot(tune_output) + theme_classic()
 ```
 
+```{r}
+ggplot(nba2021pergame, aes(x=ORB,y=X3P.)) +
+    geom_point()
+
+nba_sub <- nba2021pergame %>%
+    select(ORB, X3P.)
+
+# Run k-means for k = centers = 3
+set.seed(253)
+kclust_k5 <- kmeans(nba_sub, centers = 5)
+
+# Display the cluter assignments
+kclust_k5$cluster
+
+# Add a variable (kclust_3) to the original dataset 
+# containing the cluster assignments
+nba_clust <- nba2021pergame %>%
+    mutate(kclust_5 = factor(kclust_k5$cluster))
+ggplot(nba2021pergame, aes(x=ORB,y=X3P., colour = kclust_5)) +
+    geom_point()
+```
 
 e.
 
