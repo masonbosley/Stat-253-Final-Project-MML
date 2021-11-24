@@ -1,0 +1,76 @@
+---
+title: "HW5"
+author: "Mason Bosley"
+date: "11/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(dplyr)
+library(readr)
+library(broom)
+library(ggplot2)
+library(rpart.plot)
+library(tidymodels) 
+tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
+set.seed(123)
+
+nba2021pergame <- read.csv("Per36-Player.csv")
+
+
+nba2021_2022salaries <- read.csv("2021-2022-Player-Salaries.csv")
+names(nba2021_2022salaries)[1] <- "Player"
+
+nba2021pergame <- nba2021pergame %>% left_join(nba2021_2022salaries,by=c('Player')) %>%
+  select(-AllStar)  %>%
+  distinct(Player, .keep_all = TRUE) %>%
+  filter(!is.na(Salary)) %>%
+  na.omit()
+head(nba2021pergame)
+
+```
+
+```{r}
+ggplot(nba2021pergame, aes(x=`TRB`, y= `AST`)) +
+    geom_point()
+```
+
+**The goal of the following code/models is to group players into the 5 position groups (Point Guard, Shooting Guard, Small Forward, Power Forward, Center) using K-means clustering. We have selected statistics that differentiate smaller players from larger players to make position predictions.**
+```{r}
+nba2021pergame_sub <- nba2021pergame %>%
+    select(STL, BLK, AST, TRB, FG., FT., X3PA)
+
+# Run k-means for k = centers = 3
+set.seed(253)
+kclust_k3 <- kmeans(nba2021pergame_sub, centers = 5)
+
+# Display the cluter assignments
+kclust_k3$cluster
+
+# Add a variable (kclust_3) to the original dataset 
+# containing the cluster assignments
+nba2021pergame <- nba2021pergame %>%
+    mutate(kclust_3 = factor(kclust_k3$cluster))
+```
+
+```{r}
+ggplot(nba2021pergame, aes(x=`BLK`, y= `AST`, color=kclust_3)) +
+    geom_point()
+```
+
+**The following scaled graph uses blocks (a stat more common among large players) and assists (smaller players). It seems to at least differentiate between point guards (high assists, low blocks, shown in green) and centers (low assists, high blocks, shown in red). It is difficult to account for the data points in the lower left of the graph, as unimpactful players could be at any position.**
+```{r}
+set.seed(253)
+kclust_k3_scale <- kmeans(scale(nba2021pergame_sub), centers = 5)
+nba2021pergame <- nba2021pergame %>%
+    mutate(kclust_3_scale = factor(kclust_k3_scale$cluster))
+
+# Visualize the new cluster assignments
+ggplot(nba2021pergame, aes(x=`BLK`, y= `AST`, color=kclust_3_scale)) +
+    geom_point()
+```
