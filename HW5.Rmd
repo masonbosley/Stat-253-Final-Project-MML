@@ -30,6 +30,7 @@ nba2021pergame <- nba2021pergame %>% left_join(nba2021_2022salaries,by=c('Player
   select(-AllStar)  %>%
   distinct(Player, .keep_all = TRUE) %>%
   filter(!is.na(Salary)) %>%
+  filter(MP > 300) %>%
   na.omit()
 head(nba2021pergame)
 
@@ -100,4 +101,60 @@ nba2021pergame <- nba2021pergame %>%
 # Visualize the new cluster assignments
 ggplot(nba2021pergame, aes(x=`BLK`, y= `FG.`, color=kclust_3_scale)) +
     geom_point()
+```
+
+
+
+Hierarchical Clustering
+
+```{r}
+# Random subsample of 50 penguins
+set.seed(645)
+#nba2021pergame <- nba2021pergame %>%
+   # slice_sample(n = 50)
+
+# Select the variables to be used in clustering
+nba2021pergame_sub <- nba2021pergame %>%
+    select(BLK, AST, ORB)
+
+# Summary statistics for the variables
+summary(nba2021pergame_sub)
+
+# Compute a distance matrix on the scaled data
+dist_mat_scaled <- dist(scale(nba2021pergame_sub))
+
+# The (scaled) distance matrix is the input to hclust()
+# The method argument indicates the linkage type
+hc_complete <- hclust(dist_mat_scaled, method = "complete")
+hc_single <- hclust(dist_mat_scaled, method = "single")
+hc_average <- hclust(dist_mat_scaled, method = "average")
+hc_centroid <- hclust(dist_mat_scaled, method = "centroid")
+
+# Plot dendrograms
+plot(hc_complete)
+plot(hc_single)
+plot(hc_average)
+plot(hc_centroid)
+```
+``` {r}
+plot(hc_complete, labels = nba2021pergame$Player)
+```
+
+```{r}
+nba2021pergame <- nba2021pergame %>%
+    mutate(
+        hclust_height4 = factor(cutree(hc_complete, h = 6)), # Cut at height (h) 3
+        hclust_num3 = factor(cutree(hc_complete, k = 5)) # Cut into 6 clusters (k)
+    )
+
+nba2021pergame %>%
+    ggplot(aes(x=hclust_height4, color=AST,y=Pos, size=PF)) +
+    geom_point()
+
+nba2021pergame %>%
+    ggplot(aes(x=hclust_num3, color=Pos,y=AST, size=ORB)) +
+    geom_point()
+
+library(rgl)
+plot3d(nba2021pergame$AST, nba2021pergame$BLK, nba2021pergame$ORB, col = nba2021pergame$hclust_num3)
 ```
