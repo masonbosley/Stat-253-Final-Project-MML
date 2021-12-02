@@ -167,4 +167,38 @@ nba2021pergame %>%
 nba2021per36 %>%
   ggplot(aes(x=Pos, y=Salary)) +
   geom_boxplot()
+
+nba2021pergame %>%
+  ggplot(aes(x=Salary)) +
+  geom_histogram()
+```
+
+``` {r}
+nba2021per36_sub2 <- nba2021per36 %>%
+    select(Salary, PTS, AST, TRB)
+
+# Run k-means for k = centers = 3
+set.seed(253)
+kclust_k3 <- kmeans(nba2021per36_sub2, centers = 5)
+
+# Display the cluter assignments
+kclust_k3$cluster
+
+
+nba2021per36 <- nba2021per36 %>%
+    mutate(kclust_3 = factor(kclust_k3$cluster))
+
+ggplot(nba2021per36, aes(x=`Salary`, y= `WS`, color=kclust_3)) +
+    geom_point()
+
+set.seed(253)
+kclust_k3_scale <- kmeans(scale(nba2021per36_sub2), centers = 5)
+nba2021per36 <- nba2021per36 %>%
+    mutate(kclust_3_scale = factor(kclust_k3_scale$cluster))
+
+# Visualize the new cluster assignments
+ggplot(nba2021per36, aes(x=`Salary`, y= `PTS`, color=kclust_3_scale)) +
+    geom_point()
+
+plot3d(nba2021per36$Salary, nba2021per36$PTS, nba2021per36$TRB, col = nba2021per36$kclust_3_scale)
 ```
