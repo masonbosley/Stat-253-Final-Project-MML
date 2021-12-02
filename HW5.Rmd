@@ -20,86 +20,86 @@ library(tidymodels)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 set.seed(123)
 
-nba2021pergame <- read.csv("Per36-Player.csv")
+nba2021per36 <- read.csv("Per36-Player.csv")
 
 
 nba2021_2022salaries <- read.csv("2021-2022-Player-Salaries.csv")
 names(nba2021_2022salaries)[1] <- "Player"
 
-nba2021pergame <- nba2021pergame %>% left_join(nba2021_2022salaries,by=c('Player')) %>%
+nba2021per36 <- nba2021per36 %>% left_join(nba2021_2022salaries,by=c('Player')) %>%
   select(-AllStar)  %>%
   distinct(Player, .keep_all = TRUE) %>%
   filter(!is.na(Salary)) %>%
   filter(MP > 300) %>%
   na.omit()
-head(nba2021pergame)
+head(nba2021per36)
 
 ```
 
 ```{r}
-ggplot(nba2021pergame, aes(x=`TRB`, y= `AST`)) +
+ggplot(nba2021per36, aes(x=`TRB`, y= `AST`)) +
     geom_point()
 ```
 
 **The goal of the following code/models is to group players into the 5 position groups (Point Guard, Shooting Guard, Small Forward, Power Forward, Center) using K-means clustering. We have selected statistics that differentiate smaller players from larger players to make position predictions.**
 ```{r}
-nba2021pergame_sub <- nba2021pergame %>%
+nba2021per36_sub <- nba2021per36 %>%
     select(STL, BLK, AST, TRB, FG., FT., X3PA)
 
 # Run k-means for k = centers = 3
 set.seed(253)
-kclust_k5 <- kmeans(nba2021pergame_sub, centers = 5)
+kclust_k5 <- kmeans(nba2021per36_sub, centers = 5)
 
 # Display the cluter assignments
 kclust_k5$cluster
 
 
-nba2021pergame <- nba2021pergame %>%
+nba2021per36 <- nba2021per36 %>%
     mutate(kclust_5 = factor(kclust_k5$cluster))
 ```
 
 ```{r}
-ggplot(nba2021pergame, aes(x=`BLK`, y= `AST`, color=kclust_5)) +
+ggplot(nba2021per36, aes(x=`BLK`, y= `AST`, color=kclust_5)) +
     geom_point()
 ```
 
 **The following scaled graph uses blocks (a stat more common among large players) and assists (smaller players). It seems to at least differentiate between point guards (high assists, low blocks, shown in green) and centers (low assists, high blocks, shown in red). It is difficult to account for the data points in the lower left of the graph, as unimpactful players could be at any position.**
 ```{r}
 set.seed(253)
-kclust_k5_scale <- kmeans(scale(nba2021pergame_sub), centers = 5)
-nba2021pergame <- nba2021pergame %>%
+kclust_k5_scale <- kmeans(scale(nba2021per36_sub), centers = 5)
+nba2021per36 <- nba2021per36 %>%
     mutate(kclust_5_scale = factor(kclust_k5_scale$cluster))
 
 # Visualize the new cluster assignments
-ggplot(nba2021pergame, aes(x=`BLK`, y= `AST`, color=kclust_5_scale)) +
+ggplot(nba2021per36, aes(x=`BLK`, y= `AST`, color=kclust_5_scale)) +
     geom_point()
 ```
 
 ```{r}
-nba2021pergame_sub <- nba2021pergame %>%
+nba2021per36_sub <- nba2021per36 %>%
     select(STL, BLK, AST, TRB, FG., FT., X3PA)
 
 # Run k-means for k = centers = 3
 set.seed(253)
-kclust_k3 <- kmeans(nba2021pergame_sub, centers = 3)
+kclust_k3 <- kmeans(nba2021per36_sub, centers = 3)
 
 # Display the cluter assignments
 kclust_k3$cluster
 
 
-nba2021pergame <- nba2021pergame %>%
+nba2021per36 <- nba2021per36 %>%
     mutate(kclust_3 = factor(kclust_k3$cluster))
 
-ggplot(nba2021pergame, aes(x=`BLK`, y= `FG.`, color=kclust_3)) +
+ggplot(nba2021per36, aes(x=`BLK`, y= `FG.`, color=kclust_3)) +
     geom_point()
 
 set.seed(253)
-kclust_k3_scale <- kmeans(scale(nba2021pergame_sub), centers = 3)
-nba2021pergame <- nba2021pergame %>%
+kclust_k3_scale <- kmeans(scale(nba2021per36_sub), centers = 3)
+nba2021per36 <- nba2021per36 %>%
     mutate(kclust_3_scale = factor(kclust_k3_scale$cluster))
 
 # Visualize the new cluster assignments
-ggplot(nba2021pergame, aes(x=`BLK`, y= `FG.`, color=kclust_3_scale)) +
+ggplot(nba2021per36, aes(x=`BLK`, y= `FG.`, color=kclust_3_scale)) +
     geom_point()
 ```
 
@@ -110,18 +110,18 @@ Hierarchical Clustering
 ```{r}
 # Random subsample of 50 penguins
 set.seed(645)
-#nba2021pergame <- nba2021pergame %>%
+#nba2021per36 <- nba2021per36 %>%
    # slice_sample(n = 50)
 
 # Select the variables to be used in clustering
-nba2021pergame_sub <- nba2021pergame %>%
+nba2021per36_sub <- nba2021per36 %>%
     select(BLK, AST, ORB)
 
 # Summary statistics for the variables
-summary(nba2021pergame_sub)
+summary(nba2021per36_sub)
 
 # Compute a distance matrix on the scaled data
-dist_mat_scaled <- dist(scale(nba2021pergame_sub))
+dist_mat_scaled <- dist(scale(nba2021per36_sub))
 
 # The (scaled) distance matrix is the input to hclust()
 # The method argument indicates the linkage type
@@ -137,24 +137,34 @@ plot(hc_average)
 plot(hc_centroid)
 ```
 ``` {r}
-plot(hc_complete, labels = nba2021pergame$Player)
+plot(hc_complete, labels = nba2021per36$Player)
 ```
 
 ```{r}
-nba2021pergame <- nba2021pergame %>%
+nba2021per36 <- nba2021per36 %>%
     mutate(
         hclust_height4 = factor(cutree(hc_complete, h = 6)), # Cut at height (h) 3
         hclust_num3 = factor(cutree(hc_complete, k = 5)) # Cut into 6 clusters (k)
     )
 
-nba2021pergame %>%
+nba2021per36 %>%
     ggplot(aes(x=hclust_height4, color=AST,y=Pos, size=PF)) +
     geom_point()
 
-nba2021pergame %>%
+nba2021per36 %>%
     ggplot(aes(x=hclust_num3, color=Pos,y=AST, size=ORB)) +
     geom_point()
 
 library(rgl)
-plot3d(nba2021pergame$AST, nba2021pergame$BLK, nba2021pergame$ORB, col = nba2021pergame$hclust_num3)
+plot3d(nba2021per36$AST, nba2021per36$BLK, nba2021per36$ORB, col = nba2021per36$hclust_num3)
+```
+
+```{r}
+nba2021pergame %>%
+  ggplot(aes(x=Pos, y=Salary)) +
+  geom_boxplot()
+
+nba2021per36 %>%
+  ggplot(aes(x=Pos, y=Salary)) +
+  geom_boxplot()
 ```

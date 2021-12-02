@@ -78,6 +78,10 @@ nba2021pergame <- nba2021pergame %>% left_join(nba2021_2022salaries,by=c('Player
   distinct(Player, .keep_all = TRUE) %>%
   filter(!is.na(Salary)) %>%
   na.omit()
+
+nba2021pergame <- nba2021pergame %>%
+mutate(Pos = stringr::str_replace(stringr::str_sub(Pos,1,2),"-",""))
+
 head(nba2021pergame)
 ```
 
@@ -187,15 +191,15 @@ ggplot(mod1_output, aes(x = .pred, y = resid)) +
 ```
 
 ```{r} 
-nba2021pergame <- nba2021pergame %>%
+nba2021per36 <- nba2021per36 %>%
 mutate(Pos = stringr::str_replace(stringr::str_sub(Pos,1,2),"-",""))
 
-nba2021pergame <- nba2021pergame %>%
+nba2021per36 <- nba2021per36 %>%
   mutate(Pos = as.factor(Pos))
   
-data_fold <- vfold_cv(nba2021pergame, v = 10)
+data_fold <- vfold_cv(nba2021per36, v = 10)
 
-data_rec <- recipe(Pos ~ G+GS +FG +FGA + MP + PTS +STL + BLK + Age + ORB + DRB + AST + WS + X3P. + X2P., data = nba2021pergame)
+data_rec <- recipe(Pos ~ FG +FGA + FT. + PTS +STL + BLK + ORB + DRB + AST + X3P. + X2P. + TOV, data = nba2021per36)
 
 data_wf_tune <- workflow() %>%
   add_model(tree_spec) %>%
@@ -217,7 +221,7 @@ best_complexity %>%
   pull(cost_complexity)
 data_wf_final <- finalize_workflow(data_wf_tune, best_complexity)
 
-pos_final_fit <- fit(data_wf_final, data = nba2021pergame)
+pos_final_fit <- fit(data_wf_final, data = nba2021per36)
 
 
 tune_res %>% 
@@ -227,12 +231,12 @@ tune_res %>%
 tree_mod_lowcp <- fit(
     data_wf_tune %>%
         update_model(tree_spec %>% set_args(cost_complexity = .0001)),
-    data = nba2021pergame
+    data = nba2021per36
 )
 tree_mod_highcp <- fit(
     data_wf_tune %>%
-        update_model(tree_spec %>% set_args(cost_complexity = .03)),
-    data = nba2021pergame
+        update_model(tree_spec %>% set_args(cost_complexity = .018)),
+    data = nba2021per36
 )
 
 # Plot all 3 trees in a row
@@ -317,7 +321,7 @@ ggplot(nba2021pergame, aes(x=ORB,y=X3P.)) +
     geom_point()
 
 nba_sub <- nba2021pergame %>%
-    select(ORB, X3P.)
+    select(ORB, X3P., )
 
 # Run k-means for k = centers = 3
 set.seed(253)
@@ -330,7 +334,7 @@ kclust_k5$cluster
 # containing the cluster assignments
 nba_clust <- nba2021pergame %>%
     mutate(kclust_5 = factor(kclust_k5$cluster))
-ggplot(nba2021pergame, aes(x=ORB,y=X3P., colour = kclust_5)) +
+ggplot(nba_clust, aes(x=ORB,y=X3P., colour = kclust_5)) +
     geom_point()
 ```
 
