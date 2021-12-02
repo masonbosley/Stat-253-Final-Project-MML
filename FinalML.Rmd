@@ -1,0 +1,87 @@
+---
+title: "ML Final Project"
+author: "Mason Bosley, Lou Miller"
+date: "12/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(readr)
+library(broom)
+library(ggplot2)
+library(rpart.plot)
+library(tidymodels) 
+tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
+set.seed(123)
+
+nba2021pergame <- read.csv("2021-PerGame-Player-Stats.csv")
+
+
+nba2021_2022salaries <- read.csv("2021-2022-Player-Salaries.csv")
+names(nba2021_2022salaries)[1] <- "Player"
+
+nba2021pergame <- nba2021pergame %>% left_join(nba2021_2022salaries,by=c('Player')) %>%
+  select(-AllStar)  %>%
+  distinct(Player, .keep_all = TRUE) %>%
+  filter(!is.na(Salary)) %>%
+  na.omit()
+head(nba2021pergame)
+```
+
+
+```{r}
+nba2021pergame %>%
+    ggplot(aes(x = WS, y = Salary, color = AllNBA)) + 
+    geom_point(alpha = 0.2) + 
+    geom_smooth(span = 0.2, se = FALSE) +
+    theme_classic()
+```
+
+```{r}
+nba2021per36 <- read.csv("Per36-Player.csv")
+
+
+nba2021_2022salaries <- read.csv("2021-2022-Player-Salaries.csv")
+names(nba2021_2022salaries)[1] <- "Player"
+
+nba2021per36 <- nba2021per36 %>% left_join(nba2021_2022salaries,by=c('Player')) %>%
+  select(-AllStar)  %>%
+  distinct(Player, .keep_all = TRUE) %>%
+  filter(!is.na(Salary)) %>%
+  filter(MP > 300) %>%
+  na.omit()
+head(nba2021per36)
+```
+
+```{r}
+nba2021per36_sub <- nba2021per36 %>%
+    select(STL, BLK, AST, TRB, FG., FT., X3PA)
+
+# Run k-means for k = centers = 3
+set.seed(253)
+kclust_k5 <- kmeans(nba2021per36_sub, centers = 5)
+
+# Display the cluter assignments
+kclust_k5$cluster
+
+
+nba2021per36 <- nba2021per36 %>%
+    mutate(kclust_5 = factor(kclust_k5$cluster))
+```
+
+```{r}
+set.seed(253)
+kclust_k5_scale <- kmeans(scale(nba2021per36_sub), centers = 5)
+nba2021per36 <- nba2021per36 %>%
+    mutate(kclust_5_scale = factor(kclust_k5_scale$cluster))
+
+# Visualize the new cluster assignments
+ggplot(nba2021per36, aes(x=`BLK`, y= `AST`, color=kclust_5_scale)) +
+    geom_point()
+```
+
