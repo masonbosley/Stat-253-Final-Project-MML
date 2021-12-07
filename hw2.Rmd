@@ -364,14 +364,19 @@ data_rf_OOB_output %>%
 ```
 
 ```{r}
-data_fit_mtry12
+data_fit_mtry7
 ```
 
 ```{r}
-rf_OOB_output(data_fit_mtry12,12, nba2021per36 %>% pull(Pos)) %>%
+rf_OOB_output(data_fit_mtry7,7, nba2021per36 %>% pull(Pos)) %>%
     conf_mat(truth = class, estimate= .pred_class)
 ```
-
+Purity measures
+C:  .528
+PF: .749
+SF: .700
+SG: .598
+PG: .465
 
 ```{r}
 #Logistic
