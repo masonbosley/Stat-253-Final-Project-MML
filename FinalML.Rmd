@@ -51,7 +51,7 @@ lm_lasso_spec_tune <-
   set_engine(engine = 'glmnet') %>% 
   set_mode('regression')
 
-full_rec <- recipe(Salary ~ G+ GS +FG +FGA + MP + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + TRB + AST + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021pergame) %>%
+full_rec <- recipe(Salary ~ G+ GS +FG +FGA + FG.+ MP + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + TRB + AST + X3P + X3PA + X3P. + X2P + X2PA + FT + FTA + FT., data = nba2021pergame) %>%
   step_nzv(all_predictors()) %>% # removes variables with the same value
   step_normalize(all_numeric_predictors()) %>% 
   step_dummy(all_nominal_predictors())
@@ -100,7 +100,7 @@ coefs_lambdas %>%
   geom_vline(xintercept = best_se_penalty %>% pull(penalty), linetype = 'dashed') + 
   theme_classic() + 
   theme(legend.position = "bottom", legend.text=element_text(size=8)) +
-  xlim(0,8000000) + ylim(-2000000,5000000)
+  xlim(0,7700000) + ylim(-2500000,5000000)
 ```
 
 
