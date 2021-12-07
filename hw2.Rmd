@@ -125,10 +125,10 @@ tree_spec <- decision_tree() %>%
 ```{r}
 # recipes & workflows
 mod1 <- fit(lm_spec, 
-    Salary ~ G+GS +FG +FGA + MP + PTS +STL + BLK + Age + ORB + DRB + AST + WS + X3P. + X2P., data = nba2021pergame)
+    Salary ~ G+GS +FG +FGA + MP + PTS +STL + BLK + Age + ORB + DRB + AST + X3P. + X2P., data = nba2021pergame)
 
 
-full_rec <- recipe(Salary ~ G+ GS +FG +FGA + MP + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + TRB + AST + WS + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021pergame) %>%
+full_rec <- recipe(Salary ~ G+ GS +FG +FGA + MP + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + TRB + AST + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021pergame) %>%
   step_nzv(all_predictors()) %>% # removes variables with the same value
   step_normalize(all_numeric_predictors()) %>% 
   step_dummy(all_nominal_predictors())
@@ -170,9 +170,43 @@ c.
 ```{r}
 #  calculate/collect CV metrics
 best_penalty <- select_best(nbatune_output, metric = 'mae')
-best_penalty
-```
+#best_penalty
+best_se_penalty <- select_by_one_std_err(nbatune_output, metric = 'mae', desc(penalty)) # choose largest penalty value within 1 se of the lowest cv mae
+best_se_penalty
 
+final_wf <- finalize_workflow(lasso_wf_tune, best_penalty) # incorporates penalty value to workflow
+final_wf_se <- finalize_workflow(lasso_wf_tune, best_se_penalty) # incorporates penalty value to workflow
+
+final_fit <- fit(final_wf, data = nba2021pergame)
+final_fit_se <- fit(final_wf_se, data = nba2021pergame)
+
+#tidy(final_fit)
+tidy(final_fit_se)
+
+glmnet_output <- final_fit_se %>% extract_fit_parsnip() %>% pluck('fit') # get the original glmnet output
+
+lambdas <- glmnet_output$lambda
+coefs_lambdas <- 
+  coefficients(glmnet_output, s = lambdas )  %>% 
+  as.matrix() %>%  
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(lambda = lambdas ) %>% 
+  select(lambda, everything(), -`(Intercept)`) %>% 
+  pivot_longer(cols = -lambda, 
+               names_to = "term", 
+               values_to = "coef") %>%
+  mutate(var = purrr::map_chr(stringr::str_split(term,"_"),~.[1]))
+
+coefs_lambdas %>%
+  ggplot(aes(x = lambda, y = coef, group = term, color = var)) +
+  geom_line() +
+  geom_vline(xintercept = best_se_penalty %>% pull(penalty), linetype = 'dashed') + 
+  theme_classic() + 
+  theme(legend.position = "bottom", legend.text=element_text(size=8)) +
+  xlim(0,8000000) + ylim(-2000000,5000000)
+```
+PTS, Age, and AST are the most important determiners of Salary, followed by FT, DRB, and GS
  
 d.
 
