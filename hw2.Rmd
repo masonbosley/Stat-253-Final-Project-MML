@@ -216,6 +216,15 @@ ggplot(mod1_output, aes(x = .pred, y = resid)) +
 ```
 
 ```{r} 
+nba2021per36 <- read.csv("Per36-Player.csv")
+
+nba2021per36 <- nba2021per36 %>% left_join(nba2021_2022salaries,by=c('Player')) %>%
+  select(-AllStar)  %>%
+  distinct(Player, .keep_all = TRUE) %>%
+  filter(!is.na(Salary)) %>%
+  filter(MP > 300) %>%
+  na.omit()
+
 nba2021per36 <- nba2021per36 %>%
 mutate(Pos = stringr::str_replace(stringr::str_sub(Pos,1,2),"-",""))
 
@@ -295,16 +304,16 @@ data_wf_mtry2 <- workflow() %>%
 
 ## Create workflows for mtry = 12, 74, and 147
 
+data_wf_mtry7 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 7)) %>%
+  add_recipe(data_rec)
+
 data_wf_mtry12 <- workflow() %>%
   add_model(rf_spec %>% set_args(mtry = 12)) %>%
   add_recipe(data_rec)
 
-data_wf_mtry74 <- workflow() %>%
-  add_model(rf_spec %>% set_args(mtry = 74)) %>%
-  add_recipe(data_rec)
-
-data_wf_mtry147 <- workflow() %>%
-  add_model(rf_spec %>% set_args(mtry = 147)) %>%
+data_wf_mtry19 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 19)) %>%
   add_recipe(data_rec)
 ```
 
@@ -315,16 +324,53 @@ data_fit_mtry2 <- fit(data_wf_mtry2, data = nba2021per36)
 
 # Fit models for 12, 74, 147
 set.seed(123) 
-data_fit_mtry12 <- fit(data_wf_mtry12, data = nba2021per36)
+data_fit_mtry7 <- fit(data_wf_mtry7, data = nba2021per36)
 
 set.seed(123)
-data_fit_mtry74 <- fit(data_wf_mtry74, data = nba2021per36)
+data_fit_mtry12 <- fit(data_wf_mtry12, data = nba2021per36)
 
 set.seed(123) 
-data_fit_mtry147 <- fit(data_wf_mtry147, data = nba2021per36)
+data_fit_mtry19 <- fit(data_wf_mtry19, data = nba2021per36)
 ```
 
+```{r}
+# Custom Function to get OOB predictions, true observed outcomes and add a user-provided model label
+rf_OOB_output <- function(fit_model, model_label, truth){
+    tibble(
+          .pred_class = fit_model %>% extract_fit_engine() %>% pluck('predictions'), #OOB predictions
+          class = truth,
+          label = model_label
+      )
+}
 
+#check out the function output
+rf_OOB_output(data_fit_mtry2,2, nba2021per36 %>% pull(Pos))
+```
+
+```{r}
+# Evaluate OOB Metrics
+
+data_rf_OOB_output <- bind_rows(
+    rf_OOB_output(data_fit_mtry2,2, nba2021per36 %>% pull(Pos)),
+    rf_OOB_output(data_fit_mtry7,7, nba2021per36 %>% pull(Pos)),
+    rf_OOB_output(data_fit_mtry12,12, nba2021per36 %>% pull(Pos)),
+    rf_OOB_output(data_fit_mtry19,19, nba2021per36 %>% pull(Pos))
+)
+
+
+data_rf_OOB_output %>% 
+    group_by(label) %>%
+    accuracy(truth = class, estimate = .pred_class)
+```
+
+```{r}
+data_fit_mtry12
+```
+
+```{r}
+rf_OOB_output(data_fit_mtry12,12, nba2021per36 %>% pull(Pos)) %>%
+    conf_mat(truth = class, estimate= .pred_class)
+```
 
 
 ```{r}
