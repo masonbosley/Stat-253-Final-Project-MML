@@ -158,29 +158,20 @@ nbatune_output <- tune_grid( # new function for tuning parameters
   grid = penalty_grid # penalty grid defined above
 )
 nbatune_output
-autoplot(nbatune_output)
-
 
 mod1 %>% tidy()
-
 ```
 
 c.
 
 ```{r}
-#  calculate/collect CV metrics
-best_penalty <- select_best(nbatune_output, metric = 'mae')
-#best_penalty
-best_se_penalty <- select_by_one_std_err(nbatune_output, metric = 'mae', desc(penalty)) # choose largest penalty value within 1 se of the lowest cv mae
+best_se_penalty <- select_by_one_std_err(nbatune_output, metric = 'mae', desc(penalty))
 best_se_penalty
 
-final_wf <- finalize_workflow(lasso_wf_tune, best_penalty) # incorporates penalty value to workflow
 final_wf_se <- finalize_workflow(lasso_wf_tune, best_se_penalty) # incorporates penalty value to workflow
 
-final_fit <- fit(final_wf, data = nba2021pergame)
 final_fit_se <- fit(final_wf_se, data = nba2021pergame)
 
-#tidy(final_fit)
 tidy(final_fit_se)
 
 glmnet_output <- final_fit_se %>% extract_fit_parsnip() %>% pluck('fit') # get the original glmnet output
