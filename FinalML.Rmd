@@ -39,9 +39,70 @@ REGRESSION
 nba2021pergame %>%
     ggplot(aes(x = WS, y = Salary, color = AllNBA)) + 
     geom_point(alpha = 0.2) + 
-    geom_smooth(span = 0.2, se = FALSE) +
+    geom_smooth(span = 0.8, se = FALSE) +
     theme_classic()
 ```
+
+LASSO
+```{r}
+lm_lasso_spec_tune <- 
+  linear_reg() %>%
+  set_args(mixture = 1, penalty = tune()) %>% 
+  set_engine(engine = 'glmnet') %>% 
+  set_mode('regression')
+
+full_rec <- recipe(Salary ~ G+ GS +FG +FGA + MP + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + TRB + AST + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021pergame) %>%
+  step_nzv(all_predictors()) %>% # removes variables with the same value
+  step_normalize(all_numeric_predictors()) %>% 
+  step_dummy(all_nominal_predictors())
+lasso_wf_tune <- workflow() %>% 
+  add_recipe(full_rec) %>% # recipe defined above
+  add_model(lm_lasso_spec_tune) 
+
+penalty_grid <- grid_regular(
+  penalty(range = c(3, 7)), #log10 transformed 
+  levels = 10)
+
+nbatune_output <- tune_grid( # new function for tuning parameters
+  lasso_wf_tune, # workflow
+  resamples = nba_cv10, # cv folds
+  metrics = metric_set(mae),
+  grid = penalty_grid # penalty grid defined above
+)
+
+best_se_penalty <- select_by_one_std_err(nbatune_output, metric = 'mae', desc(penalty))
+best_se_penalty
+
+final_wf_se <- finalize_workflow(lasso_wf_tune, best_se_penalty) # incorporates penalty value to workflow
+
+final_fit_se <- fit(final_wf_se, data = nba2021pergame)
+
+tidy(final_fit_se)
+
+glmnet_output <- final_fit_se %>% extract_fit_parsnip() %>% pluck('fit') # get the original glmnet output
+
+lambdas <- glmnet_output$lambda
+coefs_lambdas <- 
+  coefficients(glmnet_output, s = lambdas )  %>% 
+  as.matrix() %>%  
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(lambda = lambdas ) %>% 
+  select(lambda, everything(), -`(Intercept)`) %>% 
+  pivot_longer(cols = -lambda, 
+               names_to = "term", 
+               values_to = "coef") %>%
+  mutate(var = purrr::map_chr(stringr::str_split(term,"_"),~.[1]))
+
+coefs_lambdas %>%
+  ggplot(aes(x = lambda, y = coef, group = term, color = var)) +
+  geom_line() +
+  geom_vline(xintercept = best_se_penalty %>% pull(penalty), linetype = 'dashed') + 
+  theme_classic() + 
+  theme(legend.position = "bottom", legend.text=element_text(size=8)) +
+  xlim(0,8000000) + ylim(-2000000,5000000)
+```
+
 
 ```{r}
 nba2021per36 <- read.csv("Per36-Player.csv")
