@@ -33,11 +33,16 @@ nba2021pergame <- nba2021pergame %>% left_join(nba2021_2022salaries,by=c('Player
 head(nba2021pergame)
 ```
 
+CROSS-VALIDATION
+```{r}
+nba_cv10 <- vfold_cv(nba2021pergame, v = 10)
+```
+
 
 REGRESSION
 ```{r}
 nba2021pergame %>%
-    ggplot(aes(x = WS, y = Salary, color = AllNBA)) + 
+    ggplot(aes(x = PTS, y = Salary, color = factor(AllNBA))) + 
     geom_point(alpha = 0.2) + 
     geom_smooth(span = 0.8, se = FALSE) +
     theme_classic()
@@ -188,11 +193,11 @@ tree_mod_highcp %>% extract_fit_engine() %>% rpart.plot()
 
 ```{r}
 nba2021per36_sub <- nba2021per36 %>%
-    select(STL, BLK, AST, TRB, FG., FT., X3PA)
+    select(STL, BLK, AST, TRB, FT., X3PA)
 
 # Run k-means for k = centers = 3
 set.seed(253)
-kclust_k5 <- kmeans(nba2021per36_sub, centers = 5)
+kclust_k5 <- kmeans(nba2021per36_sub, centers = 3)
 
 # Display the cluter assignments
 kclust_k5$cluster
@@ -204,7 +209,7 @@ nba2021per36 <- nba2021per36 %>%
 
 ```{r}
 set.seed(253)
-kclust_k5_scale <- kmeans(scale(nba2021per36_sub), centers = 5)
+kclust_k5_scale <- kmeans(scale(nba2021per36_sub), centers = 3)
 nba2021per36 <- nba2021per36 %>%
     mutate(kclust_5_scale = factor(kclust_k5_scale$cluster))
 
