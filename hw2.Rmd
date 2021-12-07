@@ -271,6 +271,62 @@ pos_final_fit %>% extract_fit_engine() %>% rpart.plot()
 tree_mod_highcp %>% extract_fit_engine() %>% rpart.plot()
 ```
 
+FORESTS
+``` {r}
+library(vip)
+conflicted::conflict_prefer("vi", "vip")
+
+rf_spec <- rand_forest() %>%
+  set_engine(engine = 'ranger') %>% 
+  set_args(mtry = NULL, # size of random subset of variables; default is floor(sqrt(number of total predictors))
+           trees = 1000, # Number of trees
+           min_n = 2,
+           probability = FALSE, # FALSE: get hard predictions (not needed for regression)
+           importance = 'impurity') %>% # we'll come back to this at the end
+  set_mode('classification') # change this for regression
+
+# Recipe
+data_rec <- recipe(Pos ~ FG +FGA + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + TRB + AST + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021per36)
+
+# Workflows
+data_wf_mtry2 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 2)) %>%
+  add_recipe(data_rec)
+
+## Create workflows for mtry = 12, 74, and 147
+
+data_wf_mtry12 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 12)) %>%
+  add_recipe(data_rec)
+
+data_wf_mtry74 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 74)) %>%
+  add_recipe(data_rec)
+
+data_wf_mtry147 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 147)) %>%
+  add_recipe(data_rec)
+```
+
+```{r}
+# Fit Models
+set.seed(123) # make sure to run this before each fit so that you have the same 1000 trees
+data_fit_mtry2 <- fit(data_wf_mtry2, data = nba2021per36)
+
+# Fit models for 12, 74, 147
+set.seed(123) 
+data_fit_mtry12 <- fit(data_wf_mtry12, data = nba2021per36)
+
+set.seed(123)
+data_fit_mtry74 <- fit(data_wf_mtry74, data = nba2021per36)
+
+set.seed(123) 
+data_fit_mtry147 <- fit(data_wf_mtry147, data = nba2021per36)
+```
+
+
+
+
 ```{r}
 #Logistic
 
