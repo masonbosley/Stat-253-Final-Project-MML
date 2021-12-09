@@ -189,7 +189,89 @@ pos_final_fit %>% extract_fit_engine() %>% rpart.plot()
 tree_mod_highcp %>% extract_fit_engine() %>% rpart.plot()
 ```
 
+  Random Forest
+``` {r}
+library(vip)
+conflicted::conflict_prefer("vi", "vip")
 
+rf_spec <- rand_forest() %>%
+  set_engine(engine = 'ranger') %>% 
+  set_args(mtry = NULL, # size of random subset of variables; default is floor(sqrt(number of total predictors))
+           trees = 1000, # Number of trees
+           min_n = 2,
+           probability = FALSE, # FALSE: get hard predictions (not needed for regression)
+           importance = 'impurity') %>% # we'll come back to this at the end
+  set_mode('classification') # change this for regression
+
+# Recipe
+data_rec <- recipe(Pos ~ FG +FGA + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + TRB + AST + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021per36)
+
+# Workflows
+data_wf_mtry2 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 2)) %>%
+  add_recipe(data_rec)
+
+data_wf_mtry4 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 4)) %>%
+  add_recipe(data_rec)
+
+data_wf_mtry9 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 9)) %>%
+  add_recipe(data_rec)
+
+data_wf_mtry19 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 19)) %>%
+  add_recipe(data_rec)
+```
+
+```{r}
+# Fit Models
+set.seed(123)
+data_fit_mtry2 <- fit(data_wf_mtry2, data = nba2021per36)
+
+set.seed(123)
+data_fit_mtry4 <- fit(data_wf_mtry4, data = nba2021per36)
+
+set.seed(123) 
+data_fit_mtry9 <- fit(data_wf_mtry9, data = nba2021per36)
+
+set.seed(123) 
+data_fit_mtry19 <- fit(data_wf_mtry19, data = nba2021per36)
+```
+
+```{r}
+# Evaluate OOB Metrics
+
+data_rf_OOB_output <- bind_rows(
+    rf_OOB_output(data_fit_mtry2,2, nba2021per36 %>% pull(Pos)),
+    rf_OOB_output(data_fit_mtry4,4, nba2021per36 %>% pull(Pos)),
+    rf_OOB_output(data_fit_mtry9,9, nba2021per36 %>% pull(Pos)),
+    rf_OOB_output(data_fit_mtry19,19, nba2021per36 %>% pull(Pos))
+)
+
+
+data_rf_OOB_output %>% 
+    group_by(label) %>%
+    accuracy(truth = class, estimate = .pred_class)
+```
+
+```{r}
+data_fit_mtry2
+data_fit_mtry4
+data_fit_mtry9
+data_fit_mtry19
+```
+
+```{r}
+rf_OOB_output(data_fit_mtry2,2, nba2021per36 %>% pull(Pos)) %>%
+    conf_mat(truth = class, estimate= .pred_class)
+rf_OOB_output(data_fit_mtry4,4, nba2021per36 %>% pull(Pos)) %>%
+    conf_mat(truth = class, estimate= .pred_class)
+rf_OOB_output(data_fit_mtry9,9, nba2021per36 %>% pull(Pos)) %>%
+    conf_mat(truth = class, estimate= .pred_class)
+rf_OOB_output(data_fit_mtry19,19, nba2021per36 %>% pull(Pos)) %>%
+    conf_mat(truth = class, estimate= .pred_class)
+```
 
 ```{r}
 nba2021per36_sub <- nba2021per36 %>%
