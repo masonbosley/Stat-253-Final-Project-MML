@@ -256,13 +256,6 @@ data_rf_OOB_output %>%
 ```
 
 ```{r}
-data_fit_mtry2
-data_fit_mtry4
-data_fit_mtry9
-data_fit_mtry19
-```
-
-```{r}
 rf_OOB_output(data_fit_mtry2,2, nba2021per36 %>% pull(Pos)) %>%
     conf_mat(truth = class, estimate= .pred_class)
 rf_OOB_output(data_fit_mtry4,4, nba2021per36 %>% pull(Pos)) %>%
