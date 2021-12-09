@@ -315,6 +315,10 @@ data_wf_mtry12 <- workflow() %>%
 data_wf_mtry19 <- workflow() %>%
   add_model(rf_spec %>% set_args(mtry = 19)) %>%
   add_recipe(data_rec)
+
+data_wf_mtry4 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 4)) %>%
+  add_recipe(data_rec)
 ```
 
 ```{r}
@@ -331,6 +335,9 @@ data_fit_mtry12 <- fit(data_wf_mtry12, data = nba2021per36)
 
 set.seed(123) 
 data_fit_mtry19 <- fit(data_wf_mtry19, data = nba2021per36)
+
+set.seed(123)
+data_fit_mtry4 <- fit(data_wf_mtry4, data = nba2021per36)
 ```
 
 ```{r}
@@ -354,7 +361,8 @@ data_rf_OOB_output <- bind_rows(
     rf_OOB_output(data_fit_mtry2,2, nba2021per36 %>% pull(Pos)),
     rf_OOB_output(data_fit_mtry7,7, nba2021per36 %>% pull(Pos)),
     rf_OOB_output(data_fit_mtry12,12, nba2021per36 %>% pull(Pos)),
-    rf_OOB_output(data_fit_mtry19,19, nba2021per36 %>% pull(Pos))
+    rf_OOB_output(data_fit_mtry19,19, nba2021per36 %>% pull(Pos)),
+    rf_OOB_output(data_fit_mtry4,4, nba2021per36 %>% pull(Pos))
 )
 
 
@@ -364,14 +372,26 @@ data_rf_OOB_output %>%
 ```
 
 ```{r}
+data_fit_mtry2
 data_fit_mtry7
+data_fit_mtry12
+data_fit_mtry19
+data_fit_mtry4
 ```
 
 ```{r}
 rf_OOB_output(data_fit_mtry7,7, nba2021per36 %>% pull(Pos)) %>%
     conf_mat(truth = class, estimate= .pred_class)
+rf_OOB_output(data_fit_mtry2,2, nba2021per36 %>% pull(Pos)) %>%
+    conf_mat(truth = class, estimate= .pred_class)
+rf_OOB_output(data_fit_mtry12,12, nba2021per36 %>% pull(Pos)) %>%
+    conf_mat(truth = class, estimate= .pred_class)
+rf_OOB_output(data_fit_mtry19,19, nba2021per36 %>% pull(Pos)) %>%
+    conf_mat(truth = class, estimate= .pred_class)
+rf_OOB_output(data_fit_mtry4,4, nba2021per36 %>% pull(Pos)) %>%
+    conf_mat(truth = class, estimate= .pred_class)
 ```
-Purity measures
+Purity measures for mtry7
 C:  .528
 PF: .749
 SF: .700
