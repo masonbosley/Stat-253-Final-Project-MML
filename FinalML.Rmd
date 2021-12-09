@@ -173,7 +173,7 @@ tune_res %>%
 
 tree_mod_lowcp <- fit(
     data_wf_tune %>%
-        update_model(tree_spec %>% set_args(cost_complexity = .0001)),
+        update_model(tree_spec %>% set_args(cost_complexity = .012)),
     data = nba2021per36
 )
 tree_mod_highcp <- fit(
@@ -272,24 +272,24 @@ nba2021per36_sub <- nba2021per36 %>%
 
 # Run k-means for k = centers = 3
 set.seed(253)
-kclust_k5 <- kmeans(nba2021per36_sub, centers = 3)
+kclust_k3 <- kmeans(nba2021per36_sub, centers = 3)
 
 # Display the cluter assignments
-kclust_k5$cluster
+kclust_k3$cluster
 
 
 nba2021per36 <- nba2021per36 %>%
-    mutate(kclust_5 = factor(kclust_k5$cluster))
+    mutate(kclust_3 = factor(kclust_k3$cluster))
 ```
 
 ```{r}
 set.seed(253)
-kclust_k5_scale <- kmeans(scale(nba2021per36_sub), centers = 3)
+kclust_k3_scale <- kmeans(scale(nba2021per36_sub), centers = 3)
 nba2021per36 <- nba2021per36 %>%
-    mutate(kclust_5_scale = factor(kclust_k5_scale$cluster))
+    mutate(kclust_3_scale = factor(kclust_k3_scale$cluster))
 
 # Visualize the new cluster assignments
-ggplot(nba2021per36, aes(x=`BLK`, y= `AST`, color=kclust_5_scale)) +
+ggplot(nba2021per36, aes(x=`BLK`, y= `AST`, color=kclust_3_scale)) +
     geom_point()
 ```
 
