@@ -1,6 +1,6 @@
 ---
 title: "ML Final Project"
-author: "Mason Bosley, Lou Miller"
+author: "Mason Bosley, Lou Miller, Max Wang"
 date: "12/2/2021"
 output: html_document
 ---
@@ -239,7 +239,7 @@ set.seed(123)
 data_fit_mtry19 <- fit(data_wf_mtry19, data = nba2021per36)
 ```
 
-```{r}
+```{r, error= TRUE}
 # Evaluate OOB Metrics
 
 data_rf_OOB_output <- bind_rows(
