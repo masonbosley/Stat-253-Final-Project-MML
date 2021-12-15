@@ -179,7 +179,7 @@ tree_mod_lowcp <- fit(
 
 tree_mod_highcp <- fit(
     data_wf_tune %>%
-        update_model(tree_spec %>% set_args(cost_complexity = .018)),
+        update_model(tree_spec %>% set_args(cost_complexity = .035)),
     data = nba2021per36
 )
 
