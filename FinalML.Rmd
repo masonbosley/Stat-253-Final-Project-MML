@@ -205,7 +205,7 @@ nba2021per36 <- nba2021per36 %>%
   
 data_fold <- vfold_cv(nba2021per36, v = 10)
 
-data_rec <- recipe(Pos ~ FG +FGA + FT. + PTS +STL + BLK + ORB + DRB + AST + X3P. + X2P. + TOV, data = nba2021per36)
+data_rec <- recipe(Pos ~ FG +FGA + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + AST + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021per36)
 
 data_wf_tune <- workflow() %>%
   add_model(tree_spec) %>%
@@ -271,7 +271,7 @@ rf_spec <- rand_forest() %>%
   set_mode('classification') # change this for regression
 
 # Recipe
-data_rec <- recipe(Pos ~ FG +FGA + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + TRB + AST + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021per36)
+data_rec <- recipe(Pos ~ FG +FGA + PTS +STL + BLK + Age + TOV + PF + ORB + DRB + AST + X3P + X3PA + X2P + X2PA + FT + FTA + FT., data = nba2021per36)
 
 # Workflows
 data_wf_mtry2 <- workflow() %>%
