@@ -48,6 +48,33 @@ nba2021pergame %>%
     theme_classic()
 ```
 
+GAMS
+```{r}
+set.seed(123)
+
+gam_spec <- 
+  gen_additive_mod() %>%
+  set_engine(engine = 'mgcv') %>%
+  set_mode('regression') 
+
+gam_mod <- fit(gam_spec,
+    Salary ~ s(PTS) + s(AST) + s(WS) + s(Age) + s(DRB) + s(FT) + s(GS),
+    data = nba2021pergame
+)
+
+par(mfrow=c(2,2))
+gam_mod %>% pluck('fit') %>% mgcv::gam.check() 
+
+gam_mod %>% pluck('fit') %>% summary()
+
+gam_mod %>% pluck('fit') %>% plot( all.terms = TRUE, pages = 1)
+```
+
+```{r}
+gam_mod %>% pluck('fit') %>% plot(all.terms = TRUE, pages = 1)
+```
+
+
 LASSO
 ```{r}
 lm_lasso_spec_tune <- 
@@ -82,7 +109,7 @@ final_wf_se <- finalize_workflow(lasso_wf_tune, best_se_penalty) # incorporates 
 
 final_fit_se <- fit(final_wf_se, data = nba2021pergame)
 
-tidy(final_fit_se)
+tidy(final_fit_se) %>% filter(estimate!=0) %>% arrange(desc(abs(estimate)))
 
 glmnet_output <- final_fit_se %>% extract_fit_parsnip() %>% pluck('fit') # get the original glmnet output
 
@@ -106,6 +133,42 @@ coefs_lambdas %>%
   theme_classic() + 
   theme(legend.position = "bottom", legend.text=element_text(size=8)) +
   xlim(0,7700000) + ylim(-2500000,5000000)
+
+glmnet_output <- final_fit_se %>% extract_fit_engine()
+    
+# Create a boolean matrix (predictors x lambdas) of variable exclusion
+bool_predictor_exclude <- glmnet_output$beta==0
+
+# Loop over each variable
+var_imp <- sapply(seq_len(nrow(bool_predictor_exclude)), function(row) {
+    this_coeff_path <- bool_predictor_exclude[row,]
+    if(sum(this_coeff_path) == ncol(bool_predictor_exclude)){ return(0)}else{
+    return(ncol(bool_predictor_exclude) - which.min(this_coeff_path) + 1)}
+})
+
+# Create a dataset of this information and sort
+var_imp_data <- tibble(
+    var_name = rownames(bool_predictor_exclude),
+    var_imp = var_imp
+)
+var_imp_data %>% arrange(desc(var_imp))
+```
+
+```{r}
+final_fit_se_output <- nba2021pergame %>%
+  bind_cols(predict(final_fit_se, new_data = nba2021pergame)) %>%
+    mutate(resid = Salary - .pred)
+
+p1 <- ggplot(final_fit_se_output, aes(x = PTS, y = resid)) +
+    geom_point() +
+    geom_smooth() +
+    geom_hline(yintercept = 0, color = "red") +
+    theme_classic()
+
+p1
+
+ final_fit_se_output %>%
+    mae(truth = Salary, estimate = .pred)
 ```
 
 
@@ -173,7 +236,7 @@ tune_res %>%
 
 tree_mod_lowcp <- fit(
     data_wf_tune %>%
-        update_model(tree_spec %>% set_args(cost_complexity = .012)),
+        update_model(tree_spec %>% set_args(cost_complexity = .013)),
     data = nba2021per36
 )
 tree_mod_highcp <- fit(
@@ -239,7 +302,22 @@ set.seed(123)
 data_fit_mtry19 <- fit(data_wf_mtry19, data = nba2021per36)
 ```
 
-```{r, error= TRUE}
+```{r}
+# Custom Function to get OOB predictions, true observed outcomes and add a user-provided model label
+rf_OOB_output <- function(fit_model, model_label, truth){
+    tibble(
+          .pred_class = fit_model %>% extract_fit_engine() %>% pluck('predictions'), #OOB predictions
+          class = truth,
+          label = model_label
+      )
+}
+
+#check out the function output
+rf_OOB_output(data_fit_mtry2,2, nba2021per36 %>% pull(Pos))
+```
+
+
+```{r}
 # Evaluate OOB Metrics
 
 data_rf_OOB_output <- bind_rows(
@@ -266,6 +344,7 @@ rf_OOB_output(data_fit_mtry19,19, nba2021per36 %>% pull(Pos)) %>%
     conf_mat(truth = class, estimate= .pred_class)
 ```
 
+CLUSTERING
 ```{r}
 nba2021per36_sub <- nba2021per36 %>%
     select(STL, BLK, AST, TRB, FT., X3PA)
@@ -283,6 +362,9 @@ nba2021per36 <- nba2021per36 %>%
 ```
 
 ```{r}
+nba2021per36_sub <- nba2021per36 %>%
+    select(STL, BLK, AST, TRB, FT., X3PA)
+
 set.seed(253)
 kclust_k3_scale <- kmeans(scale(nba2021per36_sub), centers = 3)
 nba2021per36 <- nba2021per36 %>%
@@ -291,5 +373,99 @@ nba2021per36 <- nba2021per36 %>%
 # Visualize the new cluster assignments
 ggplot(nba2021per36, aes(x=`BLK`, y= `AST`, color=kclust_3_scale)) +
     geom_point()
+```
+
+```{r}
+nba2021per36_sub <- nba2021per36 %>%
+    select(STL, BLK, AST, TRB, FT., X3PA)
+
+# Run k-means for k = centers = 3
+set.seed(253)
+kclust_k5 <- kmeans(nba2021per36_sub, centers = 5)
+
+# Display the cluter assignments
+kclust_k5$cluster
+
+
+nba2021per36 <- nba2021per36 %>%
+    mutate(kclust_5 = factor(kclust_k5$cluster))
+```
+
+```{r}
+nba2021per36_sub <- nba2021per36 %>%
+    select(STL, BLK, AST, TRB, FT., X3PA)
+
+set.seed(253)
+kclust_k5_scale <- kmeans(scale(nba2021per36_sub), centers = 5)
+nba2021per36 <- nba2021per36 %>%
+    mutate(kclust_5_scale = factor(kclust_k5_scale$cluster))
+
+# Visualize the new cluster assignments
+ggplot(nba2021per36, aes(x=`BLK`, y= `AST`, color=kclust_5_scale)) +
+    geom_point()
+```
+
+```{r}
+nba2021per36_sub <- nba2021per36 %>%
+    select(STL, BLK, AST, TRB, FT., X3PA)
+
+summary(nba2021per36_sub)
+```
+
+```{r}
+set.seed(253)
+kclust_k5_6vars <- kmeans(scale(nba2021per36_sub), centers = 5)
+
+nba2021per36 <- nba2021per36 %>%
+    mutate(kclust_5_6vars = factor(kclust_k5_6vars$cluster))
+
+
+nba2021per36 %>%
+  count(Pos,kclust_5_6vars)
+```
+
+```{r}
+nba2021per36 %>%
+    group_by(kclust_5_6vars) %>%
+    summarize(across(c(STL, BLK, AST, TRB, FT., X3PA), mean))
+```
+
+```{r}
+set.seed(253)
+kclust_k3_6vars <- kmeans(scale(nba2021per36_sub), centers = 3)
+
+nba2021per36 <- nba2021per36 %>%
+    mutate(kclust_3_6vars = factor(kclust_k3_6vars$cluster))
+
+
+nba2021per36 %>%
+  count(Pos,kclust_3_6vars)
+```
+
+```{r}
+nba2021per36 %>%
+    group_by(kclust_3_6vars) %>%
+    summarize(across(c(STL, BLK, AST, TRB, FT., X3PA), mean))
+```
+
+
+```{r}
+# Data-specific function to cluster and calculate total within-cluster SS
+nbaper36_cluster_ss <- function(k){
+    # Perform clustering
+    kclust <- kmeans(scale(nba2021per36_sub), centers = k)
+
+    # Return the total within-cluster sum of squares
+    return(kclust$tot.withinss)
+}
+
+tibble(
+    k = 1:10,
+    tot_wc_ss = purrr::map_dbl(1:10, nbaper36_cluster_ss)
+) %>% 
+    ggplot(aes(x = k, y = tot_wc_ss)) +
+    geom_point() + 
+    labs(x = "Number of clusters",y = 'Total within-cluster sum of squares') + 
+    theme_classic()
 ```
 
