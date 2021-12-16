@@ -239,9 +239,10 @@ tree_mod_lowcp <- fit(
         update_model(tree_spec %>% set_args(cost_complexity = .013)),
     data = nba2021per36
 )
+
 tree_mod_highcp <- fit(
     data_wf_tune %>%
-        update_model(tree_spec %>% set_args(cost_complexity = .018)),
+        update_model(tree_spec %>% set_args(cost_complexity = .035)),
     data = nba2021per36
 )
 
@@ -251,6 +252,9 @@ tree_mod_lowcp %>% extract_fit_engine() %>% rpart.plot()
 pos_final_fit %>% extract_fit_engine() %>% rpart.plot()
 tree_mod_highcp %>% extract_fit_engine() %>% rpart.plot()
 ```
+
+
+
 
   Random Forest
 ``` {r}
@@ -319,6 +323,13 @@ rf_OOB_output(data_fit_mtry2,2, nba2021per36 %>% pull(Pos))
 
 ```{r}
 # Evaluate OOB Metrics
+rf_OOB_output <- function(fit_model, model_label, truth){
+    tibble(
+          .pred_class = fit_model %>% extract_fit_engine() %>% pluck('predictions'), #OOB predictions
+          class = truth,
+          label = model_label
+      )
+}
 
 data_rf_OOB_output <- bind_rows(
     rf_OOB_output(data_fit_mtry2,2, nba2021per36 %>% pull(Pos)),
@@ -345,6 +356,33 @@ rf_OOB_output(data_fit_mtry19,19, nba2021per36 %>% pull(Pos)) %>%
 ```
 
 CLUSTERING
+```{r}
+model_output <-data_fit_mtry4 %>% 
+    extract_fit_engine() 
+
+model_output %>% 
+    vip(num_features = 30) + theme_classic() #based on impurity
+
+model_output %>% vip::vi() %>% head()
+model_output %>% vip::vi() %>% tail()
+```
+
+```{r}
+model_output2 <- data_wf_mtry4 %>% 
+  update_model(rf_spec %>% set_args(importance = "permutation")) %>% #based on permutation
+  fit(data = nba2021per36) %>% 
+    extract_fit_engine() 
+
+model_output2 %>% 
+    vip(num_features = 30) + theme_classic()
+
+
+model_output2 %>% vip::vi() %>% head()
+model_output2 %>% vip::vi() %>% tail()
+```
+
+
+
 ```{r}
 nba2021per36_sub <- nba2021per36 %>%
     select(STL, BLK, AST, TRB, FT., X3PA)
